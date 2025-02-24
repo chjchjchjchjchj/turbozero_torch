@@ -24,13 +24,17 @@ train_mode_config: {
   lr_decay_gamma: 0.8,
   momentum: 0.9,
   c_reg: 0.0001,
-  replay_memory_max_size: 10000,
-  replay_memory_min_size: 10000,
+#   replay_memory_max_size: 10000,
+#   replay_memory_min_size: 10000,
+  replay_memory_max_size: 1,
+  replay_memory_min_size: 1,
   parallel_envs: 4096,
   policy_factor: 1.0,
   minibatch_size: 1024,
-  episodes_per_epoch: 5000,
-  episodes_per_minibatch: 25,
+#   episodes_per_epoch: 5000,
+  episodes_per_epoch: 4,
+  # episodes_per_minibatch: 25,
+  episodes_per_minibatch: 2,
   test_config: {
     algo_config: {
       name: "alphazero",
@@ -41,7 +45,8 @@ train_mode_config: {
       dirichlet_alpha: 0.1,
       dirichlet_epsilon: 0.0
     },
-    episodes_per_epoch: 256,
+    # episodes_per_epoch: 256,
+    episodes_per_epoch: 2,
     baselines: [
       {
         name: 'random'

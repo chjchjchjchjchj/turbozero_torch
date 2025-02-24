@@ -1,0 +1,60 @@
+run_tag: 'vector_selection'
+
+env_config:
+  env_type: 'vector_selection'
+  dim: 24  # 向量维度
+  lower_bound: 488  # 最少需要选择的向量数
+  board_size: 196560
+  vector_path: '24D_196560_1.npy'
+  save_dir: './alphazero_vectors_selection'
+  valid_cos_array: [-1, -0.25, 0, 0.25]
+
+model_config: {
+  res_channels: 32,
+  res_blocks: 6,
+  kernel_size: 3,
+  value_fc_size: 32,
+  value_output_activation: "tanh0to1"
+}
+train_mode_config: {
+  algo_config: {
+    name: "alphazero",
+    temperature: 1.0,
+    # num_iters: 1000,
+    num_iters: 1,
+    max_nodes: 400,
+    puct_coeff: 1.0,
+    dirichlet_alpha: 0.45,
+    dirichlet_epsilon: 0.25
+  },
+  learning_rate: 0.1,
+  lr_decay_gamma: 0.8,
+  momentum: 0.9,
+  c_reg: 0.0001,
+#   replay_memory_max_size: 10000,
+#   replay_memory_min_size: 10000,
+  replay_memory_max_size: 1,
+  replay_memory_min_size: 1,
+  # parallel_envs: 4096,
+  parallel_envs: 1,
+  policy_factor: 1.0,
+  minibatch_size: 1024,
+#   episodes_per_epoch: 5000,
+  episodes_per_epoch: 4,
+  # episodes_per_minibatch: 25,
+  episodes_per_minibatch: 1,
+  test_config: {
+    algo_config: {
+      name: "alphazero",
+      temperature: 0.0,
+      # num_iters: 1000,
+      num_iters: 1,
+      max_nodes: 400,
+      puct_coeff: 1.0,
+      dirichlet_alpha: 0.1,
+      dirichlet_epsilon: 0.0
+    },
+    # episodes_per_epoch: 256,
+    episodes_per_epoch: 1,
+  }
+}

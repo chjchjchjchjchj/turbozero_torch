@@ -22,6 +22,9 @@ from envs.othello.tester import OthelloTester
 from envs.othello.trainer import OthelloTrainer
 from .othello.env import OthelloEnv, OthelloEnvConfig
 from ._2048.env import _2048Env, _2048EnvConfig
+from .vector_selection.env import VectorSelectionEnv, VectorSelectionEnvConfig
+from .vector_selection.collector import VectorSelectionCollector
+from .vector_selection.tester import VectorSelectionTester
 
 def init_env(device: torch.device, parallel_envs: int, env_config: dict, debug: bool):
     env_type = env_config['env_type']
@@ -34,6 +37,9 @@ def init_env(device: torch.device, parallel_envs: int, env_config: dict, debug: 
     elif env_type == 'connect_x':
         config = ConnectXConfig(**env_config)
         return ConnectXEnv(parallel_envs, config, device, debug)
+    elif env_type == 'vector_selection':
+        config = VectorSelectionEnvConfig(**env_config)
+        return VectorSelectionEnv(parallel_envs, config, device, debug)
     else:
         raise NotImplementedError(f'Environment {env_type} not implemented')
     
@@ -50,6 +56,11 @@ def init_collector(episode_memory_device: torch.device, env_type: str, evaluator
         )
     elif env_type == 'connect_x':
         return ConnectXCollector(
+            evaluator=evaluator,
+            episode_memory_device=episode_memory_device
+        )
+    elif env_type == 'vector_selection':
+        return VectorSelectionCollector(
             evaluator=evaluator,
             episode_memory_device=episode_memory_device
         )
@@ -89,6 +100,16 @@ def init_tester(
     elif env_type == 'connect_x':
         return ConnectXTester(
             config=TwoPlayerTesterConfig(**test_config),
+            collector=collector,
+            model=model,
+            optimizer=optimizer,
+            history=history,
+            log_results=log_results,
+            debug=debug
+        )
+    elif env_type == 'vector_selection':
+        return VectorSelectionTester(
+            config=TesterConfig(**test_config),
             collector=collector,
             model=model,
             optimizer=optimizer,
