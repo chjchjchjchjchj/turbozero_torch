@@ -25,8 +25,14 @@ from ._2048.env import _2048Env, _2048EnvConfig
 from .vector_selection.env import VectorSelectionEnv, VectorSelectionEnvConfig
 from .vector_selection.collector import VectorSelectionCollector
 from .vector_selection.tester import VectorSelectionTester
+from .vector_selection.trainer import VectorSelectionTrainer
 
-def init_env(device: torch.device, parallel_envs: int, env_config: dict, debug: bool):
+from .vector_selection_cos.env import VectorSelectionCosEnv, VectorSelectionCosEnvConfig
+from .vector_selection_cos.collector import VectorSelectionCosCollector
+from .vector_selection_cos.tester import VectorSelectionCosTester
+from .vector_selection_cos.trainer import VectorSelectionCosTrainer
+
+def init_env(device: torch.device, parallel_envs: int, env_config: dict, debug: bool, adj: torch.Tensor=None):
     env_type = env_config['env_type']
     if env_type == 'othello':
         config = OthelloEnvConfig(**env_config)
@@ -40,6 +46,9 @@ def init_env(device: torch.device, parallel_envs: int, env_config: dict, debug: 
     elif env_type == 'vector_selection':
         config = VectorSelectionEnvConfig(**env_config)
         return VectorSelectionEnv(parallel_envs, config, device, debug)
+    elif env_type == 'vector_selection_cos':
+        config = VectorSelectionCosEnvConfig(**env_config)
+        return VectorSelectionCosEnv(parallel_envs, config, device, debug, adj)
     else:
         raise NotImplementedError(f'Environment {env_type} not implemented')
     
@@ -61,6 +70,11 @@ def init_collector(episode_memory_device: torch.device, env_type: str, evaluator
         )
     elif env_type == 'vector_selection':
         return VectorSelectionCollector(
+            evaluator=evaluator,
+            episode_memory_device=episode_memory_device
+        )
+    elif env_type == 'vector_selection_cos':
+        return VectorSelectionCosCollector(
             evaluator=evaluator,
             episode_memory_device=episode_memory_device
         )
@@ -109,6 +123,16 @@ def init_tester(
         )
     elif env_type == 'vector_selection':
         return VectorSelectionTester(
+            config=TesterConfig(**test_config),
+            collector=collector,
+            model=model,
+            optimizer=optimizer,
+            history=history,
+            log_results=log_results,
+            debug=debug
+        )
+    elif env_type == 'vector_selection_cos':
+        return VectorSelectionCosTester(
             config=TesterConfig(**test_config),
             collector=collector,
             model=model,
@@ -175,6 +199,40 @@ def init_trainer(
         assert isinstance(collector, ConnectXCollector)
         assert isinstance(tester, TwoPlayerTester)
         return ConnectXTrainer(
+            config = trainer_config,
+            collector = collector,
+            tester = tester,
+            model = model,
+            optimizer = optimizer,
+            device = device,
+            raw_train_config = train_config,
+            raw_env_config = raw_env_config,
+            history = history,
+            log_results=log_results,
+            interactive=interactive,
+            run_tag = run_tag,
+            debug = debug
+        )
+    elif env_type == 'vector_selection':
+        assert isinstance(collector, VectorSelectionCollector)
+        return VectorSelectionTrainer(
+            config = trainer_config,
+            collector = collector,
+            tester = tester,
+            model = model,
+            optimizer = optimizer,
+            device = device,
+            raw_train_config = train_config,
+            raw_env_config = raw_env_config,
+            history = history,
+            log_results=log_results,
+            interactive=interactive,
+            run_tag = run_tag,
+            debug = debug
+        )
+    elif env_type == 'vector_selection_cos':
+        assert isinstance(collector, VectorSelectionCosCollector)
+        return VectorSelectionCosTrainer(
             config = trainer_config,
             collector = collector,
             tester = tester,

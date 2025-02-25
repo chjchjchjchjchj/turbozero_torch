@@ -1,13 +1,9 @@
-
-
-
-
 from typing import Optional
 import torch
 from core.train.collector import Collector
 from core.algorithms.evaluator import Evaluator
 
-class VectorSelectionCollector(Collector):
+class VectorSelectionCosCollector(Collector):
     def __init__(self,
         evaluator: Evaluator,
         episode_memory_device: torch.device
@@ -24,7 +20,3 @@ class VectorSelectionCollector(Collector):
                 moves -= 1
             episodes.append(episode_with_rewards)
         return episodes
-
-    def postprocess(self, terminated_episodes):
-        return terminated_episodes
-            

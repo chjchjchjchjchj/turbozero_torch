@@ -48,44 +48,91 @@ class ResidualBlock(nn.Module):
         torch.quantization.fuse_modules(self.conv2, ['0', '1'], inplace=True)
 
 
+# class TurboZeroResnet(nn.Module):
+#     def __init__(self, config: ResNetConfig, input_shape: torch.Size, output_shape: torch.Size) -> None:
+#         super().__init__()
+#         assert len(input_shape) == 3  # (channels, height, width)
+#         self.value_head_activation: Optional[torch.nn.Module] = load_activation(config.value_output_activation)
+#         self.input_channels, self.input_height, self.input_width = input_shape
+
+#         self.input_block = nn.Sequential(
+#             nn.Conv2d(self.input_channels, config.res_channels, kernel_size = config.kernel_size, stride = 1, padding = 'same', bias=False),
+#             nn.BatchNorm2d(config.res_channels),
+#             nn.ReLU()
+#         )
+#         print(f"input_block: {self.input_block}")
+
+#         self.res_blocks = nn.Sequential(
+#             *[ResidualBlock(config.res_channels, config.res_channels, config.kernel_size) \
+#             for _ in range(config.res_blocks)]
+#         )
+#         print(f"res_blocks: {self.res_blocks}")
+
+#         self.policy_head = nn.Sequential(
+#             nn.Conv2d(config.res_channels, 2, kernel_size = 1, stride = 1, padding = 0, bias=False),
+#             nn.BatchNorm2d(2),
+#             nn.ReLU(),
+#             nn.Flatten(start_dim=1),
+#             nn.Linear(2 * self.input_height * self.input_width, output_shape[0])
+#             # we use cross entropy loss so no need for softmax
+#         )
+#         print(f"policy_head: {self.policy_head}")
+#         self.value_head = nn.Sequential(
+#             nn.Conv2d(config.res_channels, 1, kernel_size = 1, stride = 1, padding = 0, bias = False),
+#             nn.BatchNorm2d(1),
+#             nn.ReLU(),
+#             nn.Flatten(start_dim=1),
+#             nn.Linear(self.input_height * self.input_width, config.value_fc_size),
+#             nn.ReLU(),
+#             nn.Linear(config.value_fc_size, 1)
+#             # value head activation handled in forward
+#         )
+#         print(f"value_head: {self.value_head}")
+#         self.config = config
+
 class TurboZeroResnet(nn.Module):
-    def __init__(self, config: ResNetConfig, input_shape: torch.Size, output_shape: torch.Size) -> None:
+    def __init__(self, config, input_shape: torch.Size, output_shape: torch.Size) -> None:
         super().__init__()
         assert len(input_shape) == 3  # (channels, height, width)
-        self.value_head_activation: Optional[torch.nn.Module] = load_activation(config.value_output_activation)
+        self.value_head_activation: Optional[nn.Module] = load_activation(config.value_output_activation)
         self.input_channels, self.input_height, self.input_width = input_shape
 
+        # 输入层
         self.input_block = nn.Sequential(
-            nn.Conv2d(self.input_channels, config.res_channels, kernel_size = config.kernel_size, stride = 1, padding = 'same', bias=False),
+            nn.Conv2d(self.input_channels, config.res_channels, kernel_size=config.kernel_size, stride=1, padding="same", bias=False),
             nn.BatchNorm2d(config.res_channels),
             nn.ReLU()
         )
 
+        # 残差块
         self.res_blocks = nn.Sequential(
-            *[ResidualBlock(config.res_channels, config.res_channels, config.kernel_size) \
-            for _ in range(config.res_blocks)]
+            *[ResidualBlock(config.res_channels, config.res_channels, config.kernel_size) for _ in range(config.res_blocks)]
         )
 
+        # Policy 头：降低计算量
         self.policy_head = nn.Sequential(
-            nn.Conv2d(config.res_channels, 2, kernel_size = 1, stride = 1, padding = 0, bias=False),
-            nn.BatchNorm2d(2),
+            nn.Conv2d(config.res_channels, 32, kernel_size=3, stride=2, padding=1, bias=False),  # 降低 feature map 分辨率
+            nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.Flatten(start_dim=1),
-            nn.Linear(2 * self.input_height * self.input_width, output_shape[0])
-            # we use cross entropy loss so no need for softmax
+            nn.Conv2d(32, 16, kernel_size=3, stride=2, padding=1, bias=False),  # 进一步降维
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d((5, 5)),  # 直接归一化到固定大小
+            nn.Flatten(),
+            nn.Linear(16 * 5 * 5, output_shape[0])  # 计算量大幅降低
         )
 
+        # Value 头：保持与原始结构类似
         self.value_head = nn.Sequential(
-            nn.Conv2d(config.res_channels, 1, kernel_size = 1, stride = 1, padding = 0, bias = False),
+            nn.Conv2d(config.res_channels, 1, kernel_size=1, stride=1, padding=0, bias=False),
             nn.BatchNorm2d(1),
             nn.ReLU(),
-            nn.Flatten(start_dim=1),
-            nn.Linear(self.input_height * self.input_width, config.value_fc_size),
+            nn.AdaptiveAvgPool2d((5, 5)),  # 归一化特征图尺寸
+            nn.Flatten(),
+            nn.Linear(5 * 5, config.value_fc_size),
             nn.ReLU(),
             nn.Linear(config.value_fc_size, 1)
-            # value head activation handled in forward
         )
-
         self.config = config
 
     def forward(self, x):

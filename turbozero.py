@@ -17,6 +17,110 @@ import yaml
 
 from envs.load import init_collector, init_env, init_tester, init_trainer
 
+import numpy as np
+from tqdm import trange
+
+# def get_adj_matrix() -> torch.Tensor:
+#     """
+#     如果cos_matrix[i,j] == 0.5 or -0.5 就认为i和j是相邻的
+#     """
+#     batch_size = 1000
+#     valid_cos_arr = torch.tensor([-1/2, 1/2], dtype=torch.float16, device="cuda", requires_grad=False)
+#     vectors = torch.from_numpy(np.load("24D_196560_1.npy")).to("cuda").to(torch.float16)
+#     adj_matrix = []
+#     for i in trange(0, 196560, batch_size, desc="Generating Adjacency Matrix"):
+#         end = min(i + batch_size, 196560)
+#         vectors_a = vectors[i:end]
+#         cos_arr = vectors_a @ vectors.T
+#         m = cos_arr.shape[0]
+#         adj_arr = torch.min(torch.abs(cos_arr[:, :, None] - valid_cos_arr), axis=2)[0] < 1e-6
+#         adj_arr = adj_arr.cpu()
+#         adj_matrix.append(adj_arr)
+#     adj_matrix = torch.cat(adj_matrix, dim=0)
+#     return adj_matrix
+
+# ADJ_MATRIX = get_adj_matrix()
+
+ADJ_MATRIX = None
+
+
+
+# def get_adj_matrix() -> torch.Tensor:
+
+#     batch_size = 1000
+#     valid_cos_arr = torch.tensor([-1, -1/4, 1/4, 0, 1], dtype=torch.float16, device="cuda", requires_grad=False)
+#     vectors = torch.from_numpy(np.load("24D_196560_1.npy")).to("cuda").to(torch.float16)
+#     adj_matrix = []
+#     for i in trange(0, 196560, batch_size, desc="Generating Adjacency Matrix"):
+#         end = min(i + batch_size, 196560)
+#         vectors_a = vectors[i:end]
+#         cos_arr = vectors_a @ vectors.T
+#         m = cos_arr.shape[0]
+#         adj_arr = torch.min(torch.abs(cos_arr[:, :, None] - valid_cos_arr), axis=2)[0] < 1e-6
+#         adj_arr = adj_arr.cpu()
+#         adj_matrix.append(adj_arr)
+#     adj_matrix = torch.cat(adj_matrix, dim=0)
+#     return adj_matrix
+
+# ADJ_MATRIX = get_adj_matrix()
+
+# def get_adj_matrix() -> torch.Tensor:
+#     num_gpus = torch.cuda.device_count()
+#     total_size = 196560
+#     batch_size = total_size // (num_gpus * 18)
+#     chunk_size = total_size // num_gpus
+#     valid_cos_arr = torch.tensor([-1, -1/4, 1/4, 0, 1], dtype=torch.float16, requires_grad=False)
+#     vectors = torch.from_numpy(np.load("24D_196560_1.npy")).to(torch.float16)
+    
+#     # 创建CUDA流和存储结果的列表
+#     streams = [torch.cuda.Stream(device=f'cuda:{i}') for i in range(num_gpus)]
+#     gpu_results = [[] for _ in range(num_gpus)]
+    
+#     # 在每个GPU上启动异步计算
+#     for gpu_id in range(num_gpus):
+#         start_chunk = gpu_id * chunk_size
+#         end_chunk = start_chunk + chunk_size if gpu_id < num_gpus - 1 else total_size
+#         gpu_device = torch.device(f'cuda:{gpu_id}')
+        
+#         with torch.cuda.stream(streams[gpu_id]):
+#             # 将数据移动到当前GPU
+#             vectors_gpu = vectors.to(gpu_device)
+#             valid_cos_arr_gpu = valid_cos_arr.to(gpu_device)
+            
+#             # 在当前GPU上处理分配的批次
+#             for i in trange(start_chunk, end_chunk, batch_size, 
+#                           desc=f"GPU {gpu_id} generating adjacency matrix"):
+#                 end = min(i + batch_size, end_chunk)
+#                 vectors_a = vectors_gpu[i:end]
+                
+#                 # 计算余弦相似度
+#                 cos_arr = vectors_a @ vectors_gpu.T
+                
+#                 # 计算邻接关系
+#                 adj_arr = torch.min(torch.abs(cos_arr[:, :, None] - valid_cos_arr_gpu), 
+#                                   axis=2)[0] < 1e-6
+                
+#                 # 将结果保存到CPU
+#                 gpu_results[gpu_id].append(adj_arr.cpu())
+    
+#     # 同步所有GPU
+#     torch.cuda.synchronize()
+    
+#     # 收集并合并所有结果
+#     all_results = []
+#     for gpu_result in gpu_results:
+#         all_results.extend(gpu_result)
+    
+#     # 按正确顺序合并结果
+#     adj_matrix = torch.cat(all_results, dim=0)
+#     return adj_matrix
+
+# import time
+# start_time = time.perf_counter()
+# ADJ_MATRIX = get_adj_matrix()
+# end_time = time.perf_counter()
+# print(f"{end_time - start_time} for get_adj_matrix")
+
 def setup_logging(logfile: str):
     if logfile:
         logging.basicConfig(filename=logfile, filemode='a', level=logging.INFO, format='%(asctime)s %(message)s', force=True)
@@ -126,8 +230,8 @@ def load_trainer(args, interactive: bool) -> Trainer:
     env_type = env_config['env_type']
     parallel_envs_train = train_config['parallel_envs']
     parallel_envs_test = train_config['test_config']['episodes_per_epoch']
-    env_train = init_env(device, parallel_envs_train, env_config, args.debug)
-    env_test = init_env(device, parallel_envs_test, env_config, args.debug)
+    env_train = init_env(device, parallel_envs_train, env_config, args.debug, adj=ADJ_MATRIX)
+    env_test = init_env(device, parallel_envs_test, env_config, args.debug, adj=ADJ_MATRIX)
 
     if args.checkpoint:
         model, optimizer = load_model_and_optimizer_from_checkpoint(checkpoint, env_train, device)
@@ -159,7 +263,7 @@ def load_tester(args, interactive: bool) -> Tester:
     if args.checkpoint:
         checkpoint = load_checkpoint(args.checkpoint)
         env_config = checkpoint['raw_env_config']
-        env = init_env(device, parallel_envs, env_config, args.debug)
+        env = init_env(device, parallel_envs, env_config, args.debug, adj=ADJ_MATRIX)
         model, _ = load_model_and_optimizer_from_checkpoint(checkpoint, env, device)
         history = checkpoint['history']
 
@@ -187,7 +291,7 @@ def load_tournament(args, interactive: bool) -> Tuple[Tournament, List[dict]]:
     if args.checkpoint:
         tournament = load_tournament_checkpoint(args.checkpoint, device)
     else:
-        env = init_env(device, tournament_config['num_games'], raw_config['env_config'], args.debug)
+        env = init_env(device, tournament_config['num_games'], raw_config['env_config'], args.debug, adj=ADJ_MATRIX)
         tournament_name = tournament_config.get('tournament_name', 'tournament')
         tournament = Tournament(env, tournament_config['num_games'], tournament_config['num_tournaments'], device, tournament_name, args.debug)
 

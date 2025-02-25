@@ -182,13 +182,14 @@ class Trainer:
                             if new_episodes >= threshold_for_training_step:
                                 threshold_for_training_step += self.config.episodes_per_minibatch
                                 self.train_minibatch()
-                    
+                
                 self.add_collection_metrics(finished_episodes)
     
     def fill_replay_memory(self):
         if not self.debug:
             progress_bar = tqdm(total=self.config.replay_memory_min_size, desc='Populating Replay Memory...', leave=True, position=0)
         while self.replay_memory.size() < self.config.replay_memory_min_size:
+            print(f"replay memory size: {self.replay_memory.size()}")
             finished_episodes, _ = self.collector.collect()
             if finished_episodes:
                 for episode in finished_episodes:

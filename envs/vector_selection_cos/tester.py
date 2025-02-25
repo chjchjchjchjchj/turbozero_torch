@@ -4,7 +4,7 @@
 from core.test.tester import Tester
 
 
-class VectorSelectionTester(Tester):
+class VectorSelectionCosTester(Tester):
     def add_evaluation_metrics(self, episodes):
         if self.history is not None:
             for episode in episodes:

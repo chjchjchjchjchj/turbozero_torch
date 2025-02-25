@@ -1,19 +1,17 @@
-
-
-
 from typing import Optional
 import torch
 import numpy as np
 from core.test.tester import Tester
 from core.utils.history import Metric, TrainingMetrics
 from core.train.trainer import Trainer, TrainerConfig
-from envs.vector_selection.collector import VectorSelectionCollector
+from envs.vector_selection_cos.collector import VectorSelectionCosCollector
+from envs.vector_selection_cos.tester import VectorSelectionCosTester
 
-class VectorSelectionTrainer(Trainer):
+class VectorSelectionCosTrainer(Trainer):
     def __init__(self,
         config: TrainerConfig,
-        collector: VectorSelectionCollector,
-        tester: Tester,
+        collector: VectorSelectionCosCollector,
+        tester: VectorSelectionCosTester,
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         device: torch.device,
@@ -22,7 +20,7 @@ class VectorSelectionTrainer(Trainer):
         history: TrainingMetrics,
         log_results: bool = True,
         interactive: bool = True,
-        run_tag: str = 'vector_selection',
+        run_tag: str = '2048',
         debug: bool = False
     ):
         super().__init__(
@@ -52,12 +50,11 @@ class VectorSelectionTrainer(Trainer):
             self.history.epoch_metrics.update({
                 'avg_reward': Metric(name='avg_reward', xlabel='Epoch', ylabel='Average Reward', maximize=True, alert_on_best=self.log_results, proper_name='Average Reward'),
             })
-    
+        
     def add_collection_metrics(self, episodes):
         for episode in episodes:
             moves = len(episode)
             last_state = episode[-1][0]
-            high_square = int(last_state.max().item())
             self.history.add_episode_data({
                 'reward': moves,
             }, log=self.log_results)
@@ -67,7 +64,6 @@ class VectorSelectionTrainer(Trainer):
             self.history.add_epoch_data({
                 'avg_reward': np.mean(self.history.eval_metrics['reward'][-1].data)
             }, log=self.log_results)
-    
+
     def value_transform(self, value):
         return super().value_transform(value).log()
-
