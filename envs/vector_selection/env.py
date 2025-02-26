@@ -90,6 +90,9 @@ class VectorSelectionEnv(Env):
 
     def is_terminal(self):
         return (self.get_legal_actions().sum(dim=1, keepdim=True) == 0).flatten()
+    
+    def get_legal_actions(self) -> torch.Tensor:
+        return self.cached_legal_actions
 
     def get_legal_actions(self) -> torch.Tensor:
         legal_actions = torch.zeros((self.parallel_envs, self.board_size), dtype=torch.bool, device=self.device, requires_grad=False)
@@ -167,7 +170,22 @@ class VectorSelectionEnv(Env):
         return valid_rows
 
     def push_actions(self, actions):
+
+        # generate cached_legal_actions
         self.boards[torch.arange(self.parallel_envs), actions] = True
+        self.cached_legal_actions.fill_(False)
+        for env_idx in range(self.parallel_envs):
+            board = self.boards[env_idx]
+            selected_vectors = self.all_vectors[board]
+            if len(selected_vectors) == 0:
+                self.cached_legal_actions[env_idx] = True
+                continue
+            unselected_vectors = self.all_vectors[~board]
+            unselected_indices = torch.where(~board)[0]
+            cos_matrix = unselected_vectors @ selected_vectors.T
+            valid_rows = self.find_valid_rows(cos_matrix, self.valid_cos_arr)
+            valid_rows = unselected_indices[valid_rows]
+            self.cached_legal_actions[env_idx, valid_rows] = True
 
         # generate states
         for env_idx in range(self.parallel_envs):
