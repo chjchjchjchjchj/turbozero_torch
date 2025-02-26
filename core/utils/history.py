@@ -39,7 +39,11 @@ class Metric:
                 if self.alert_on_best:
                     logging.info(f'**** NEW BEST {self.proper_name}: {self.best:.4f} ****')
 
+    # def reset_fig(self):
+    #     self.plot = plt.figure()
+
     def reset_fig(self):
+        plt.close(self.plot)
         self.plot = plt.figure()
 
     def clear_data(self):

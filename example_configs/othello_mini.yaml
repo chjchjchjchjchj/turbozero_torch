@@ -14,7 +14,7 @@ train_mode_config: {
   algo_config: {
     name: "alphazero",
     temperature: 1.0,
-    num_iters: 1000,
+    num_iters: 10,
     max_nodes: 400,
     puct_coeff: 1.0,
     dirichlet_alpha: 0.45,

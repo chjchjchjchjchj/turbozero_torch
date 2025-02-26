@@ -7,12 +7,12 @@ import numpy as np
 from core.test.tester import Tester
 from core.utils.history import Metric, TrainingMetrics
 from core.train.trainer import Trainer, TrainerConfig
-from envs.vector_selection.collector import VectorSelectionCollector
+from envs.vector_selection_jianzhi.collector import VectorSelectionJianzhiCollector
 
-class VectorSelectionTrainer(Trainer):
+class VectorSelectionJianzhiTrainer(Trainer):
     def __init__(self,
         config: TrainerConfig,
-        collector: VectorSelectionCollector,
+        collector: VectorSelectionJianzhiCollector,
         tester: Tester,
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,

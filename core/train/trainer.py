@@ -15,7 +15,6 @@ from collections import deque
 from core.utils.memory import GameReplayMemory, ReplayMemory
 import time
 
-
 def init_history(log_results: bool = True):
     return TrainingMetrics(
         train_metrics=[
@@ -47,7 +46,7 @@ class TrainerConfig:
     replay_memory_max_size: int
     test_config: TesterConfig
     replay_memory_sample_games: bool = True
-
+    save_ckpt_dir: str = './checkpoints/'
 
 class Trainer:
     def __init__(self,
@@ -91,6 +90,9 @@ class Trainer:
             self.replay_memory = ReplayMemory(
                 config.replay_memory_max_size,
             )
+        
+        self.save_ckpt_dir = Path(config.save_ckpt_dir)
+        self.save_ckpt_dir.mkdir(parents=True, exist_ok=True)
     
     def add_collection_metrics(self, episodes):
         raise NotImplementedError()
@@ -189,7 +191,7 @@ class Trainer:
         if not self.debug:
             progress_bar = tqdm(total=self.config.replay_memory_min_size, desc='Populating Replay Memory...', leave=True, position=0)
         while self.replay_memory.size() < self.config.replay_memory_min_size:
-            print(f"replay memory size: {self.replay_memory.size()}")
+            # print(f"replay memory size: {self.replay_memory.size()}")
             finished_episodes, _ = self.collector.collect()
             if finished_episodes:
                 for episode in finished_episodes:
@@ -228,10 +230,11 @@ class Trainer:
             
             
     def save_checkpoint(self, custom_name: Optional[str] = None) -> None:
-        directory = f'./checkpoints/{self.run_tag}/'
-        Path(directory).mkdir(parents=True, exist_ok=True)
+        # # directory = f'./checkpoints/{self.run_tag}/'
+        # directory = f'/data/haojun/turbozero_24D/'
+        # Path(directory).mkdir(parents=True, exist_ok=True)
         filename = custom_name if custom_name is not None else str(self.history.cur_epoch)
-        filepath = directory + f'{filename}.pt'
+        filepath = self.save_ckpt_dir / f'{filename}.pt'
         torch.save({
             'model_arch_params': self.model.config,
             'model_state_dict': self.model.state_dict(),

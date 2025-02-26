@@ -8,7 +8,7 @@ import numpy as np
 from pathlib import Path
 
 @dataclass
-class VectorSelectionEnvConfig(EnvConfig):
+class VectorSelectionJianzhiEnvConfig(EnvConfig):
     board_size: int = 196560
     dim: int = 24
     lower_bound: int = 500
@@ -18,10 +18,10 @@ class VectorSelectionEnvConfig(EnvConfig):
     FloatType: str = "torch.float16"
     
 
-class VectorSelectionEnv(Env):
+class VectorSelectionJianzhiEnv(Env):
     def __init__(self,
         parallel_envs: int,
-        config: VectorSelectionEnvConfig, 
+        config: VectorSelectionJianzhiEnvConfig, 
         device: torch.device,
         debug=False
     ) -> None:
@@ -55,8 +55,6 @@ class VectorSelectionEnv(Env):
         self.save_path = Path(config.save_path)
         self.save_path.mkdir(parents=True, exist_ok=True)
 
-        self.cached_legal_actions = torch.ones((self.parallel_envs, self.board_size), dtype=torch.bool, device=device)
-
     def reset(self, seed=None) -> int:
         if seed is not None:
             torch.manual_seed(seed)
@@ -76,7 +74,6 @@ class VectorSelectionEnv(Env):
         self.states *= torch.logical_not(self.terminated).view(self.parallel_envs, 1, 1, 1)
         self.boards *= torch.logical_not(self.terminated).view(self.parallel_envs, 1)
         self.terminated.zero_()
-        self.cached_legal_actions.fill_(True)
         return seed
 
     def next_turn(self):

@@ -49,6 +49,9 @@ class EpisodeMemory:
 
         for i in range(self.parallel_envs):
             self.memory[i].append((inputs[i], action_visits[i], legal_actions[i]))
+        
+        if len(self.memory[0]) == 22:
+            print("memory size: ", len(self.memory[0]))
 
     def pop_terminated_episodes(self, terminated: torch.Tensor):
         episodes = []
