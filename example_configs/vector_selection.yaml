@@ -6,7 +6,7 @@ env_config: {
   lower_bound: 500,
   valid_cos_arr: [-1.0, -0.25, 0.25, 0.0, 1.0],
   all_vectors_path: "24D_196560_1.npy",
-  save_path: "/data/haojun/max_board_iter100",
+  save_path: "/data/haojun/max_board_iter10_replay10",
   FloatType: "torch.float32"
 }
 model_config: { # overwritten if loading a checkpoint
@@ -21,7 +21,7 @@ train_mode_config: {
     name: "alphazero",
     temperature: 1.0,
     # num_iters: 1000,
-    num_iters: 100,
+    num_iters: 10,
     # num_iters: 4,
     max_nodes: 400,
     puct_coeff: 1.0,
@@ -34,8 +34,8 @@ train_mode_config: {
   c_reg: 0.0001,
   # replay_memory_max_size: 10000,
   # replay_memory_min_size: 10000,
-  replay_memory_max_size: 100,
-  replay_memory_min_size: 100,
+  replay_memory_max_size: 10,
+  replay_memory_min_size: 10,
   # replay_memory_max_size: 1,
   # replay_memory_min_size: 1,
   # parallel_envs: 4096,
@@ -49,18 +49,18 @@ train_mode_config: {
   episodes_per_minibatch: 3,
   # episodes_per_minibatch: 1,
 
-  save_ckpt_dir: '/data/haojun/max_board_iter100',
+  save_ckpt_dir: '/data/haojun/max_board_iter10_replay10',
   test_config: {
     algo_config: {
       name: "alphazero",
       temperature: 0.0,
-      num_iters: 1000,
+      num_iters: 10,
       max_nodes: 400,
       puct_coeff: 1.0,
       dirichlet_alpha: 0.1,
       dirichlet_epsilon: 0.0
     },
     # episodes_per_epoch: 256,
-    episodes_per_epoch: 0,
+    episodes_per_epoch: 10,
   }
 }

@@ -22,7 +22,7 @@ class VectorSelectionJianzhiTrainer(Trainer):
         history: TrainingMetrics,
         log_results: bool = True,
         interactive: bool = True,
-        run_tag: str = 'vector_selection',
+        run_tag: str = 'vector_selection_jianzhi',
         debug: bool = False
     ):
         super().__init__(

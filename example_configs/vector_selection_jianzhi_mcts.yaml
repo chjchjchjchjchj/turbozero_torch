@@ -1,0 +1,65 @@
+run_tag: 'vector_selection_jianzhi'
+env_config: {
+  env_type: 'vector_selection_jianzhi',
+  board_size: 196560,
+  dim: 24,
+  lower_bound: 500,
+  valid_cos_arr: [-1.0, -0.25, 0.25, 0.0, 1.0],
+  all_vectors_path: "24D_196560_1.npy",
+  save_path: "/data/haojun/max_board_jianzhi_iter10_replay10",
+  FloatType: "torch.float32"
+}
+model_config: { # overwritten if loading a checkpoint
+  res_channels: 1,
+  res_blocks: 1,
+  kernel_size: 1,
+  value_fc_size: 1,
+  value_output_activation: "tanh0to1"
+}
+train_mode_config: {
+  algo_config: {
+    name: "mcts",
+    # num_iters: 1000,
+    num_iters: 1000000,
+    # num_iters: 4,
+    max_nodes: 400,
+    puct_coeff: 1.0,
+    dirichlet_alpha: 0.1,
+    dirichlet_epsilon: 0.0
+  },
+  learning_rate: 0.1,
+  lr_decay_gamma: 0.8,
+  momentum: 0.9,
+  c_reg: 0.0001,
+  # replay_memory_max_size: 10000,
+  # replay_memory_min_size: 10000,
+  replay_memory_max_size: 10,
+  replay_memory_min_size: 10,
+  # replay_memory_max_size: 1,
+  # replay_memory_min_size: 1,
+  # parallel_envs: 4096,
+  parallel_envs: 1,
+  policy_factor: 1.0,
+  minibatch_size: 16,
+#   episodes_per_epoch: 5000,
+  episodes_per_epoch: 50,
+  # episodes_per_epoch: 1,
+  # episodes_per_minibatch: 25,
+  episodes_per_minibatch: 3,
+  # episodes_per_minibatch: 1,
+
+  save_ckpt_dir: '/data/haojun/max_board_jianzhi_iter10_replay10',
+  test_config: {
+    algo_config: {
+      name: "alphazero",
+      temperature: 0.0,
+      num_iters: 1000,
+      max_nodes: 400,
+      puct_coeff: 1.0,
+      dirichlet_alpha: 0.1,
+      dirichlet_epsilon: 0.0
+    },
+    # episodes_per_epoch: 256,
+    episodes_per_epoch: 0,
+  }
+}

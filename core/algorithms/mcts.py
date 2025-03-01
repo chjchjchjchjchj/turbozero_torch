@@ -242,6 +242,7 @@ class MCTS(Evaluator):
             valid[:,-1] = 0
             leaf_inc = valid * is_leaf.long().view(-1, 1)
             self.n_vals[self.env_indices_expnd, self.visits, self.actions] += leaf_inc
+
             self.w_vals[self.env_indices_expnd, self.visits, self.actions] += (rewards * leaf_inc * self.reward_indices) + ((1-rewards) * leaf_inc * ~self.reward_indices)
 
             # update the depths tensor to reflect the current search depth for each environment   

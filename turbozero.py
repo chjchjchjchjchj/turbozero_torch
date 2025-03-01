@@ -251,8 +251,8 @@ def load_trainer(args, interactive: bool) -> Trainer:
 
 def load_tester(args, interactive: bool) -> Tester:
     raw_config = load_config(args.config)
-    test_config = raw_config['test_mode_config']
-
+    # test_config = raw_config['test_mode_config']
+    test_config = raw_config['train_mode_config']['test_config']
     if torch.cuda.is_available() and args.gpu:
         device = torch.device('cuda')
         torch.backends.cudnn.benchmark = True

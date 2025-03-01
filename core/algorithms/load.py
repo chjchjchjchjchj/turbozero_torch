@@ -14,7 +14,7 @@ from core.algorithms.evaluator import EvaluatorConfig
 from core.algorithms.lazyzero import LazyZero, LazyZeroConfig
 from core.demo.human import HumanEvaluator
 from core.env import Env
-
+from core.algorithms.mcts import MCTS, MCTSConfig
 
 def init_evaluator(algo_config: dict, env: Env, *args, **kwargs):
     algo_type = algo_config['name']
@@ -51,6 +51,9 @@ def init_evaluator(algo_config: dict, env: Env, *args, **kwargs):
     elif algo_type == 'lazy_greedy_mcts':
         config = LazyGreedyMCTSConfig(**algo_config)
         return LazyGreedyMCTS(env, config, *args, **kwargs)
+    elif algo_type == 'mcts':
+        config = MCTSConfig(**algo_config)
+        return MCTS(env, config, *args, **kwargs)
     else:
         raise NotImplementedError(f'Unknown evaluator type: {algo_type}')
     
